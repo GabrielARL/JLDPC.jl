@@ -1,28 +1,23 @@
 # JLDPC.jl
 
-Lightweight LDPC utilities for Julia: loading parity-check / generator matrices, encoding, simple belief-prop, and a joint sparse-channel + codeword decoder for quick experiments.
+[![Build Status](https://github.com/GabrielARL/JLDPC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/GabrielARL/JLDPC.jl/actions)  
+*A Julia package for LDPC coding, modulation, and joint sparse/dense decoding in noisy and multipath channels.*
 
-<!-- Badges (uncomment/adjust once you have CI/docs set up)
-[![CI](https://github.com/<YOUR_USER>/JLDPC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/<YOUR_USER>/JLDPC.jl/actions)
-[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://<YOUR_USER>.github.io/JLDPC.jl)
--->
+---
 
-## Features
+## ✨ Features
+- Load and manage LDPC codes (`.H`, `.pchk`, `.gen`) with automatic path resolution.
+- Encode/decode messages with **LDPC codes**.
+- Simulate transmission over **AWGN** and **multipath channels**.
+- **Sum-product (BP) decoder** for classical LDPC decoding.
+- **Joint sparse channel decoding** (gradient-based) for multipath fading channels.
+- Experimental support for **dense joint channel decoding**.
 
-- Read `.H` / `.pchk` (parity-check) and `.gen` (dense generator) files.
-- Path resolver for data files (add folders or use `ENV["LDPC_DATA_DIR"]`).
-- Encoding that respects the `.gen` column permutation.
-- A simple sum-product (BP) decoder.
-- A joint decoder that estimates a **sparse** complex channel and bits together.
+---
 
-## Install
-
+## 🚀 Installation
+Clone the repository and activate it in Julia:
 ```julia
-] add https://github.com/<YOUR_USER>/JLDPC.jl
-## Examples
-
-- [`examples/basic_usage.jl`](examples/basic_usage.jl) — clean, runnable walkthrough.  
-Run it with:
-```bash
-julia --project -e 'include("examples/basic_usage.jl")'
+using Pkg
+Pkg.clone("https://github.com/GabrielARL/JLDPC.jl.git")
 
