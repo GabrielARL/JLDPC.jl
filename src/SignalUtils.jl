@@ -138,38 +138,53 @@ end
 # -----------------------
 # Resample and PLL
 # -----------------------
-function do_resample(rx_pkt::AbstractVector, x_ref::AbstractVector, sps::Int, fc::Real, dopp::DataFrame, pbfs::Int, n::Int)
-    rx_pb = upconvert(signal(rx_pkt, pbfs / sps), sps, fc)
+function do_resample(rx_pkt::AbstractVector, x_ref::AbstractVector, sps::Int, fc::Real,
+                     dopp::DataFrame, pbfs::Int, n::Int)
+
+    # 1) Upconvert both rx & ref to passband
+    rx_pb  = upconvert(signal(rx_pkt, pbfs / sps), sps, fc)
     ref_pb = upconvert(signal(x_ref, pbfs / sps), sps, fc)
 
+    # 2) Scan Doppler via resample factor
     best_score = -Inf
-    best_dop = 0.0
-    best_idx = 0
+    best_dop   = 0.0
+    best_idx   = 0
+
     for dop in -0.98:0.02:1.0
         factor = 1 / (1 + dop)
-        if !isfinite(factor)
-            continue
-        end
+        isfinite(factor) || continue
+
         resampled = signal(resample(rx_pb, factor), pbfs)
         cr = mfilter(ref_pb, resampled)
         val, idx = findmax(abs.(cr))
+
         push!(dopp, (real(val), idx, real(dop)))
         if val > best_score
             best_score, best_dop, best_idx = val, dop, idx
         end
     end
+
+    # 3) Apply best factor → downconvert to baseband
     opt_factor = 1 / (1 + best_dop)
     rx_pb_corr = signal(resample(rx_pb, opt_factor), pbfs)
-    rx_bb = downconvert(rx_pb_corr, sps, fc)
+    rx_bb      = downconvert(rx_pb_corr, sps, fc)
+
+    # 4) Align to reference in baseband
     cr = mfilter(signal(x_ref, pbfs / sps), rx_bb)
     _, align_idx = findmax(abs.(cr))
-    if align_idx + n <= length(rx_bb)
-        return rx_bb[align_idx : align_idx + n]
-    elseif align_idx > 10
-        return rx_bb[align_idx - 10 : align_idx - 10 + n]
-    else
-        return rx_bb[1:n]
-    end
+
+    # 5) Bounds-safe extraction of n samples around align_idx
+    v = _as_samples(rx_bb)   # index raw samples, not the MetaArray wrapper
+    L = length(v)
+
+    # If requested n is longer than we have, truncate
+    n_take = min(n, L)
+
+    # Center the window on the correlation peak when possible
+    start = clamp(align_idx - (n_take - 1) ÷ 2, 1, max(1, L - n_take + 1))
+    stop  = start + n_take - 1
+
+    return v[start:stop]
 end
 
 function track_bpsk_carrier_pll(x, fc, fs, bandwidth=1e-5)
@@ -214,14 +229,15 @@ function correct_bpsk_phase_shift(packets, x_datas, Γ, i, spsd, fc, pbfs, n, bp
     ref_data = x_datas[i]
     cr = mfilter(signal(ref_data, framerate(y_bb_pll)), y_bb_pll)
     _, ixd = findmax(abs.(cr))
-    if ixd + n - 1 < length(y_bb_pll)
-        y_data = y_bb_pll[ixd:ixd+n-1]
-    elseif ixd > 10
-        y_data = y_bb_pll[ixd-10 : ixd-10+n-1]
-    else
-        y_data = y_bb_pll[1:n]
-    end
-    return y_data
+
+    # ---- bounds-safe extraction (centered + clamped) ----
+    v = _as_samples(y_bb_pll)
+    L = length(v)
+    n_take = min(n, L)
+    start = clamp(ixd - (n_take - 1) ÷ 2, 1, max(1, L - n_take + 1))
+    stop  = start + n_take - 1
+
+    return v[start:stop]
 end
 
 function correct_bpsk_packet_phase(pkt::SampledSignal, x_ref::SampledSignal, Γ::Float64, sps::Int,
@@ -242,13 +258,15 @@ function correct_bpsk_packet_phase(pkt::SampledSignal, x_ref::SampledSignal, Γ:
     y_bb_pll = downconvert(y_pb_pll, sps, fc)
     cr = mfilter(x_ref, y_bb_pll)
     _, ixd = findmax(abs.(cr))
-    if ixd + n <= length(y_bb_pll)
-        return _as_samples(y_bb_pll)[ixd : ixd + n - 1]
-    elseif ixd > 10
-        return _as_samples(y_bb_pll)[ixd - 10 : ixd - 10 + n - 1]
-    else
-        return _as_samples(y_bb_pll)[1:n]
-    end
+
+    # ---- bounds-safe extraction (centered + clamped) ----
+    v = _as_samples(y_bb_pll)
+    L = length(v)
+    n_take = min(n, L)
+    start = clamp(ixd - (n_take - 1) ÷ 2, 1, max(1, L - n_take + 1))
+    stop  = start + n_take - 1
+
+    return v[start:stop]
 end
 
 # -----------------------
