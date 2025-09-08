@@ -10,7 +10,7 @@ using StatsBase, SignalAnalysis
 include("paths.jl")
 
 # -------------------------------------------------------------------
-# Types
+# Types (needed by IO)
 # -------------------------------------------------------------------
 mutable struct Code
     k::Int
@@ -34,7 +34,13 @@ const GF2 = GaloisField(2)
 include("io.jl")
 
 # -------------------------------------------------------------------
-# Exports
+# Optional utilities submodule (no re-exports to avoid breaking users)
+# Access via `JLDPC.SignalUtils`
+# -------------------------------------------------------------------
+include("SignalUtils.jl")
+
+# -------------------------------------------------------------------
+# Exports (unchanged API)
 # -------------------------------------------------------------------
 export Code,
        # from io.jl:
@@ -222,7 +228,8 @@ function decode_sparse_joint(y, code::Code, parity_indices, pilot_pos, pilot_bps
     x̂ = resolve_sign_flip(x̂_raw, z_opt, pilot_pos, pilot_bpsk, get_H_sparse(code))
 
     if verbose
-        println("\n📦 Optimization complete.")
+        println("
+📦 Optimization complete.")
         println("✅ Valid codeword: ", is_valid_codeword(get_H_sparse(code), BitVector(x̂)))
         println("📡 Estimated h: ", h_est)
     end
