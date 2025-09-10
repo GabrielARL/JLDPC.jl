@@ -40,20 +40,3 @@ p1 = firstpeak(cr)
 println("Detected correlation peaks: ", peaks[1:min(end, 10)])  # show first few
 println("First strong peak index: ", p1)
 
-# Optional visualize:
-# plot(cr, title="Correlation |mfilter(x,y)|", xlabel="lag", ylabel="magnitude")
-# scatter!(peaks, cr[peaks], m=:cross, label="peaks")
-
-# --- 5) Tiny PLL demo on modulated BPSK (optional sanity check) ---
-# Create a carrier and run the BPSK PLL tracker.
-fc = 0.07   # “Hz” relative to fs=1.0 in this toy
-carrier = cis.(2π*fc .* (0:N-1))
-sig_c = carrier .* x_bpsk .+ 0.02 .* randn(N)          # add light noise
-_, demod, phase_err = track_bpsk_carrier_pll(sig_c, fc, fs, 1e-5)
-println("PLL phase error (first 5): ", round.(samples(phase_err)[1:5], digits=3))
-
-# --- 6) Bonus: use argminphase to align a slightly rotated constellation ---
-θ_deg = 25.0
-x_rot = x_bpsk .* cispi.(θ_deg/180)                     # deliberate rotation
-x_aligned, θ_hat = argminphase(x_rot, x_bpsk)
-println("argminphase recovered rotation ≈ ", round(θ_hat, digits=2), "°")
