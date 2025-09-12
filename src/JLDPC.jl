@@ -8,7 +8,7 @@ using StatsBase, SignalAnalysis
 # Path resolver utilities (add_ldpc_path!, resolve_ldpc_file, etc.)
 # -------------------------------------------------------------------
 include("paths.jl")
-
+include("CFO_est.jl")
 # -------------------------------------------------------------------
 # Types (needed by IO)
 # -------------------------------------------------------------------

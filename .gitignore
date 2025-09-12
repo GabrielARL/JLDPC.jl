@@ -1,1 +1,3 @@
 /Manifest*.toml
+examples/bpsk_passband_impairments.jl
+examples/bpsk_passband_pll_example.jl
